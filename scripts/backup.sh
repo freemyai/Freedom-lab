@@ -9,19 +9,23 @@ tar czf "$DEST/FreedomLab-config.tar.gz" \
   --exclude='models' --exclude='vault/backups' --exclude='logs' \
   -C ~ FreedomLab 2>/dev/null || true
 
-# ~/.hermes 里 venv/缓存是可重建的（torch 等大依赖），只备份配置/记忆/skills/sessions
+# ~/.hermes 里 venv/node_modules/.git/缓存都是可重建的，只备份配置/记忆/skills/sessions
 tar czf "$DEST/hermes.tar.gz" -C ~ .hermes \
-  --exclude='.hermes/hermes-agent/venv' \
-  --exclude='.hermes/hermes-agent/.git' \
-  --exclude='.hermes/audio_cache' \
-  --exclude='.hermes/image_cache' \
-  --exclude='.hermes/logs' \
-  --exclude='.hermes/bin' \
+  --exclude='venv' \
+  --exclude='node_modules' \
+  --exclude='.git' \
+  --exclude='audio_cache' \
+  --exclude='image_cache' \
+  --exclude='logs' \
+  --exclude='bin' \
   2>/dev/null || true
 
 tar czf "$DEST/hindsight.tar.gz" -C ~ .hindsight \
   --exclude='.hindsight/profiles/*.log' \
   2>/dev/null || true
+
+# Hindsight 嵌入式 PostgreSQL 数据（记忆本体，最重要的备份对象）
+tar czf "$DEST/hindsight-pgdata.tar.gz" -C ~ .pg0 2>/dev/null || true
 
 # 模型只记录 checksum / repo / quant，不复制几十 GB 权重
 {
