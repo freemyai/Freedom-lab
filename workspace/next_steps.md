@@ -1,8 +1,10 @@
 # Next Steps — Freedom Lab
 
-## 阻塞中（等 owner）
+## 已完成
 
-- [ ] `sudo usermod -aG docker nvidia` → 启用 Docker 沙箱 → A01-A07
+- [x] Docker 沙箱启用 + A01-A07 验收（A06 ~/.ssh 不可达 PASS；A07 无外网 PASS）
+- [x] doctor.sh 10/10 PASS（2026-09-05）
+- [x] Ollama 重启后记忆持久化验证 PASS
 
 ## 下一步
 
