@@ -1,0 +1,10 @@
+# FreedomBench-Memory — M05 Contradiction
+id: M05
+name: contradiction
+steps:
+  - tell: "Project database is SQLite."
+  - tell: "Project migrated from SQLite to PostgreSQL."
+  - ask: "Which database are we using now?"
+expect:
+  contains: ["PostgreSQL"]
+  not_current: ["SQLite"]

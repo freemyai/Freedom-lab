@@ -1,0 +1,8 @@
+# FreedomBench-Memory — M02 Preference
+id: M02
+name: preference
+steps:
+  - tell: "I prefer Python for quick data experiments."
+  - ask: "Write me a quick script to summarize a CSV column distribution. Which language will you use and why?"
+expect:
+  contains: ["Python"]

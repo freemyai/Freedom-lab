@@ -1,0 +1,19 @@
+{
+  "mode": "local_embedded",
+  "llm_provider": "ollama",
+  "llm_base_url": "http://127.0.0.1:11434/v1",
+  "llm_model": "qwen3.8:27b",
+  "bank_id": "freedom-main",
+  "recall_budget": "mid",
+  "memory_mode": "hybrid",
+  "auto_retain": true,
+  "retain_async": true,
+  "retain_every_n_turns": 1,
+  "auto_recall": true,
+  "recall_sync": true,
+  "recall_max_tokens": 2500,
+  "recall_types": "observation,world,experience",
+  "retain_source": "freedom-lab",
+  "bank_mission": "This memory bank represents the long-term memory of a personal AI named Freedom. Its purpose is to maintain accurate continuity across months and years, help the AI understand the owner's evolving goals and projects, and distinguish historical states from current decisions. Memory must remain factual, evidence-grounded, owner-correctable, and useful for future action.",
+  "bank_retain_mission": "Remember durable information that improves a persistent personal AI: user preferences, identity, projects, decisions and their rationale, important entities, workflows, goals, failures, successful fixes, current state changes, and unresolved questions. Do not retain credentials, authentication tokens, passwords, private keys, temporary debugging values, or casual conversational filler. When a new fact supersedes an older fact, preserve the temporal history while making the latest state retrievable as the current state."
+}

@@ -1,0 +1,11 @@
+# FreedomBench-Memory — M06 Generalization
+id: M06
+name: generalization
+steps:
+  - tell: "On project Alpha (2026-08-07): do not deploy production on Friday."
+  - tell: "On project Beta (2026-08-14): do not deploy production on Friday."
+  - tell: "On project Gamma (2026-08-21): do not deploy production on Friday."
+  - ask: "What deployment convention have you learned?"
+expect:
+  contains: ["Friday"]
+  generalized_rule: true

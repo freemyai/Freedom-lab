@@ -1,0 +1,8 @@
+# FreedomBench-Memory — M01 Identity
+id: M01
+name: identity
+steps:
+  - tell: "My dog is named Coffee."
+  - ask: "What is my dog's name?"
+expect:
+  contains: ["Coffee"]

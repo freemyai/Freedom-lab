@@ -1,0 +1,11 @@
+# FreedomBench-Memory — M03 Temporal Update
+id: M03
+name: temporal
+steps:
+  - tell: "Freedom AI will start with hardware."
+  - tell: "We changed strategy. Freedom AI will start with software."
+  - ask: "What is our current strategy? Has it always been the same?"
+expect:
+  contains: ["software"]
+  current_state: software
+  history_acknowledged: hardware

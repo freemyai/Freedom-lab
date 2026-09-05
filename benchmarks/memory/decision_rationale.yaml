@@ -1,0 +1,8 @@
+# FreedomBench-Memory — M04 Decision Rationale
+id: M04
+name: decision_rationale
+steps:
+  - tell: "We are not building NAS first because we need product validation before hardware investment."
+  - ask: "Why aren't we building NAS first?"
+expect:
+  contains: ["validation"]
