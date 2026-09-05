@@ -10,15 +10,12 @@ tar czf "$DEST/FreedomLab-config.tar.gz" \
   -C ~ FreedomLab 2>/dev/null || true
 
 # ~/.hermes 里 venv/node_modules/.git/缓存都是可重建的，只备份配置/记忆/skills/sessions
-tar czf "$DEST/hermes.tar.gz" -C ~ .hermes \
-  --exclude='venv' \
-  --exclude='node_modules' \
-  --exclude='.git' \
-  --exclude='audio_cache' \
-  --exclude='image_cache' \
-  --exclude='logs' \
-  --exclude='bin' \
-  2>/dev/null || true
+# 用 find 显式生成清单，避免 tar exclude 模式在部分版本上的歧义
+(cd ~ && find .hermes \
+  -type d \( -name venv -o -name node_modules -o -name .git \
+             -o -name audio_cache -o -name image_cache \) -prune -o \
+  -type f ! -path '.hermes/logs/*' ! -path '.hermes/bin/*' -print \
+  | tar czf "$DEST/hermes.tar.gz" -C ~ -T -) 2>/dev/null || true
 
 tar czf "$DEST/hindsight.tar.gz" -C ~ .hindsight \
   --exclude='.hindsight/profiles/*.log' \
