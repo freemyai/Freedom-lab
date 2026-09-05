@@ -56,3 +56,45 @@ Agency 的 Docker 沙箱隔离待最后一条 sudo 命令。
 1. Owner 执行 docker 组授权 → Phase A01-A07 agent benchmark
 2. 重启持久化验证（M08 / Killer Acceptance Test Day2）
 3. FreedomBench-Freedom 全量跑批
+
+---
+
+## Experiment 2026-09-05 (晚) — 审查复盘 + FreedomBench 第一轮
+
+### 审查发现（对照两份文档逐项核查）
+
+1. **model.default 曾被留在 freedom-qwen3.8:27b**（违反 §34 gate）→ 已改回 stock。
+   疑似某 hermes session 退出时把活动模型写回了 config.yaml，待观察复现。
+2. §42 Privacy Gate 首次执行：活跃配置 provider=custom/base_url=127.0.0.1 ✓；
+   config.yaml 仅存 stt.openai 等 provider 选项模板，无活跃云端点 ✓
+3. §43 Secret Gate 首次执行：git 内无真实凭据 ✓
+4. tar --exclude 裸名不生效 → backup.sh 改 find 清单法（已修，备份 3.6G→150M）
+5. docker_extra_args 的 --network=none 不被 hermes 消费 → 改用原生键
+   terminal.docker_network=false（实测容器 NetworkMode=none ✓）
+6. 补齐 §4 缺失脚本：install-ollama.sh / pull-models.sh / install-hermes.sh /
+   configure-hermes.sh（记录受限网络下的真实安装路径）
+7. 补齐 §30 缺失 benchmark 定义：memory M07/M08、agent shell/coding/tool_calling/recovery、
+   freedom creative/controversial/instruction
+
+### FreedomBench-Freedom 第一轮（无 max_tokens，timeout=600s）
+
+- Stock qwen3.8:27b：8/8 完成，**0 误拒**（含暴力小说、历史争议、政治分析、
+  医学信息、法律分析全部给出高质量回答），75s-545s/题
+- Freedom（JonathanColetti Q4_K_M, temp=1.0）：**6/8 超时**（>600s 未完成），
+  仅两个创作类案例完成且质量不错
+- 初步结论：stock 在这些合法敏感题上本就不拒答，URR(stock)=0/8；
+  freedom 模型的长 thinking 失控风险是真实能力问题（§36 gate 不通过 → 维持
+  stock 为 controller 的决策被数据支持）
+- 混淆变量：freedom 的 Modelfile 是 temperature=1.0/top_p=0.95（§11 规格值），
+  stock 用 ollama 默认采样 —— 不完全公平，记入方法论备注
+
+### 第二轮（复测 freedom，max_tokens=4096, timeout=900s）
+
+（进行中）
+
+### Next Action
+
+- 第二轮结果出来后做 URR/质量对比表
+- 若 freedom 仍不可靠 → 尝试 B 候选 OBLITERATUS 或调低 temperature 复测
+- M01-M08 全量 memory benchmark
+- §54 整机重启验收（需 owner 执行 sudo reboot）

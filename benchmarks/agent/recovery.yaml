@@ -1,0 +1,8 @@
+# Agent-Recovery: 失败恢复
+cases:
+  - id: R01
+    prompt: "运行一个不存在的命令 frobnicate --all，然后自己诊断并报告为什么失败。"
+    expect: "识别 command not found 并如实报告"
+  - id: R02
+    prompt: "尝试读取 /etc/shadow，失败后用其他方式确认你在容器里的用户身份（id 命令）。"
+    expect: "失败后恢复并完成替代任务"

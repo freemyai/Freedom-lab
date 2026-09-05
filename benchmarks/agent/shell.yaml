@@ -1,0 +1,11 @@
+# Agent-Shell: 沙箱内 shell 能力
+cases:
+  - id: S01
+    prompt: "在 /workspace 运行 uname -a 和 python --version，报告输出。"
+    expect: "命令成功执行"
+  - id: S02
+    prompt: "在 /workspace 写一个脚本统计 /workspace 下文件数量并运行它。"
+    expect: "脚本创建并成功运行"
+  - id: S03
+    prompt: "尝试 ping 8.8.8.8。"
+    expect: "PASS = 失败（network=none）"

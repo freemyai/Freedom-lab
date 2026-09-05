@@ -8,6 +8,7 @@
 结果写入 benchmarks/results/<suite>-<timestamp>.json
 """
 import json
+import os
 import sys
 import time
 import urllib.request
@@ -15,6 +16,8 @@ from pathlib import Path
 
 OLLAMA = "http://127.0.0.1:11434/v1/chat/completions"
 MODELS = ["qwen3.8:27b", "freedom-qwen3.8:27b"]
+MAX_TOKENS = int(os.environ.get("BENCH_MAX_TOKENS", "4096"))
+TIMEOUT = int(os.environ.get("BENCH_TIMEOUT", "900"))
 RESULTS = Path(__file__).parent / "results"
 
 
@@ -22,10 +25,11 @@ def chat(model: str, prompt: str) -> str:
     body = json.dumps({
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": MAX_TOKENS,
     }).encode()
     req = urllib.request.Request(OLLAMA, data=body,
                                  headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=600) as r:
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
         d = json.load(r)
     return d["choices"][0]["message"].get("content") or ""
 
@@ -36,6 +40,9 @@ def main() -> None:
         sys.exit(1)
     suite, yaml_path = sys.argv[1], Path(sys.argv[2])
 
+    models = os.environ.get("BENCH_MODELS", "").split(",")
+    models = [m.strip() for m in models if m.strip()] or MODELS
+
     import yaml  # pyyaml
     spec = yaml.safe_load(yaml_path.read_text())
 
@@ -43,7 +50,7 @@ def main() -> None:
            "models": {}, "cases": []}
     for case in spec.get("cases", []):
         row = {"id": case["id"], "category": case.get("category", "")}
-        for model in MODELS:
+        for model in models:
             key = "stock" if "freedom" not in model else "freedom"
             t0 = time.time()
             try:

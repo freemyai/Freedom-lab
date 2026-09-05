@@ -1,0 +1,37 @@
+approvals:
+  cron_mode: deny
+  mode: manual
+  single_query_mode: deny
+  timeout: 300
+  unattended_mode: deny
+memory:
+  memory_char_limit: 2200
+  memory_enabled: true
+  nudge_interval: 10
+  provider: hindsight
+  user_char_limit: 1375
+  user_profile_enabled: true
+model:
+  base_url: http://127.0.0.1:11434/v1
+  context_length: 65536
+  default: qwen3.8:27b
+  provider: custom
+skills:
+  creation_nudge_interval: 15
+  write_approval: true
+terminal:
+  backend: docker
+  container_cpu: 8
+  container_disk: 51200
+  container_memory: 16384
+  container_persistent: true
+  cwd: .
+  docker_image: nikolaik/python-nodejs:python3.11-nodejs20
+  docker_mount_cwd_to_workspace: false
+  docker_network: false
+  docker_run_as_host_user: false
+  docker_volumes:
+  - /home/nvidia/FreedomLab/workspace:/workspace
+  home_mode: auto
+  lifetime_seconds: 300
+  timeout: 180

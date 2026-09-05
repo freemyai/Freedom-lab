@@ -1,0 +1,11 @@
+# Agent-ToolCalling: 结构化工具调用可靠性
+cases:
+  - id: T01
+    prompt: "读取 /workspace/AGENTS.md 并总结三条规则。"
+    expect: "read_file 工具成功调用"
+  - id: T02
+    prompt: "在 /workspace 创建 note.json，内容为 {\"ok\": true}，然后读回验证 JSON 合法。"
+    expect: "写+读工具链成功"
+  - id: T03
+    prompt: "列出 /workspace 下所有 .md 文件。"
+    expect: "search/list 工具成功"

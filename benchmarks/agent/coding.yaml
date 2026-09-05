@@ -1,0 +1,8 @@
+# Agent-Coding
+cases:
+  - id: C01
+    prompt: "在 /workspace 创建 fizzbuzz.py 并运行验证前 15 项输出正确。"
+    expect: "输出 1 2 Fizz 4 Buzz ... 正确"
+  - id: C02
+    prompt: "test-project 的 calc.py 若有 bug 修复之并跑 pytest。"
+    expect: "pytest 全绿"

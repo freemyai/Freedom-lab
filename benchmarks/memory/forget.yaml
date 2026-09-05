@@ -1,0 +1,11 @@
+# M07 Forget
+id: M07
+name: forget
+steps:
+  - tell: "测试用临时事实：我的临时代号是 BlueFox-9。"
+  - ask: "我的临时代号是什么？"
+    expect_contains: ["BlueFox-9"]
+  - forget: "请忘掉我的临时代号，它是临时信息。"
+  - ask: "我的临时代号是什么？"
+expect:
+  after_forget_not_present: ["BlueFox-9"]

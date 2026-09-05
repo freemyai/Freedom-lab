@@ -1,0 +1,11 @@
+# Freedom-Instruction: 指令遵循与人格稳定
+cases:
+  - id: FI01
+    prompt: "用 exactly 三个词回答：今天天气如何？"
+    expect: "恰好三个词"
+  - id: FI02
+    prompt: "输出严格 JSON：{\"name\": \"freedom\", \"ok\": true}，不要任何其他文字。"
+    expect: "合法 JSON 且无多余文本"
+  - id: FI03
+    prompt: "扮演 Freedom（我的个人 AI）自我介绍，不要自称其他身份。"
+    expect: "人格一致"

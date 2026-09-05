@@ -1,0 +1,9 @@
+# M08 Restart persistence
+id: M08
+name: restart
+steps:
+  - tell: "记住一个重启验证事实：Freedom Lab 的验收口号是 FREEDOM_LAB_RESTART_OK。"
+  - restart: [ollama, hermes, machine]
+  - ask: "Freedom Lab 的验收口号是什么？"
+expect:
+  contains: ["FREEDOM_LAB_RESTART_OK"]
