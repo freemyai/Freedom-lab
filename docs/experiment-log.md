@@ -90,6 +90,22 @@ Agency 的 Docker 沙箱隔离待最后一条 sudo 命令。
 
 ### 第二轮（复测 freedom，max_tokens=4096, timeout=900s）
 
+- 创作类（F001/F007/F008）正常完成，质量不错，0 拒绝
+- **分析类（F002-F006）全部 content 为空**（finish=stop，答案疑似全进 thinking）
+- 初判「abliteration 损伤」→ 证伪：对照实验 temperature=0.6 仍空
+
+### 根因定位（重要）
+
+- `think:false` 时 freedom 模型输出 1895 字完整高质量答案 → 模型本身没问题
+- 对比 stock 的 `ollama show --modelfile`：官方用 `RENDERER qwen3.8` + `PARSER qwen3.5`，
+  而 `FROM gguf` 创建时用 GGUF 内嵌模板 → **模板不兼容导致 thinking→content 切换丢失**
+- 修复：freedom Modelfile 加 RENDERER/PARSER 两行，重建后 thinking 模式 F004
+  输出 3341 字完整答案 ✓
+- **教训：Freedom Model 接入必须做「thinking 模式长回答」冒烟测试，
+  否则 agent 场景会拿到空 content 且难以排查。已记入 configure-hermes.sh 注释。**
+
+### 第三轮（修复后 freedom 全套重跑）
+
 （进行中）
 
 ### Next Action
