@@ -136,3 +136,42 @@ Agency 的 Docker 沙箱隔离待最后一条 sudo 命令。
 - freedom/controversial、instruction 套件扩充更难触发误拒的题目
 - §54 整机重启验收（需 owner 执行 sudo reboot）
 - 两周 dogfood 开始
+
+---
+
+## Experiment 2026-09-06 — 生产事故：subagent 压缩超时 + provider 假死
+
+### 现象（owner 实测 dogfood 时发生）
+
+- 4 个 subagent 做长研究任务，context 涨到 57K-65K（64K 上限附近）
+- 压缩反复超时："Context compression timed out after 120.0s"
+- 最终 "Provider has been unresponsive for 5 consecutive stale attempts" 假死
+- 一个 Coldcard 调研任务跑了 20118s（5.6 小时）且 schema 校验失败
+
+### 根因（三个叠加）
+
+1. **主模型是 freedom-qwen3.8:27b**（temp=1.0 + thinking 全开，~3-8 t/s）——
+   违反 §34 gate：freedom 未过 tool calling benchmark 就当了 controller
+2. **auxiliary.compression 默认 timeout=120s**：57K token 的 prefill 在 27B
+   本机上就要几分钟，120s 必超时；且压缩也走主模型（freedom + thinking）
+3. **stale 检测**：思考期长无可视 token 流，连续 5 次 stale 后 hermes 主动放弃
+
+### 修复（config.yaml）
+
+- auxiliary.compression → stock qwen3.8:27b + reasoning_effort=none +
+  timeout=900 + max_output_tokens=2048
+- delegation.* → stock qwen3.8:27b（subagent 不再继承 freedom）
+- agent.local_stream_stale_timeout = 1800
+- model.default 确认回到 qwen3.8:27b
+
+### 验证
+
+- reasoning_effort=none 实测生效（reasoning=0，22s 完成短答）
+- 压缩冒烟测试：待 owner 新 session 观察
+
+### 教训（写入 Freedom Lab 运维知识）
+
+> **本地 27B 慢模型 + thinking + 短超时 = 压缩死循环。**
+> 所有辅助任务（compression/approval/delegation）必须钉到
+> 「stock + reasoning 关 + 长超时」，主模型才可以自由。
+> 这正是规格 §26 架构「Freedom Router 多脑区」的第一次真实落地。

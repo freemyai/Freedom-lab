@@ -38,4 +38,21 @@ cp ~/FreedomLab/config/hermes/SOUL.md ~/.hermes/SOUL.md
 # 参考 config/hermes/hindsight.reference.json）
 $H config set memory.provider hindsight
 
+# ── 慢本地模型的关键调优（2026-09-06 事故修复）──
+# 背景：27B @ ~8t/s，默认 compression timeout=120s 必然超时；
+# thinking 模型做压缩/委派又慢又烧 context。
+# 压缩：stock 模型 + 关思考 + 900s + 摘要上限 2048
+$H config set auxiliary.compression.provider custom
+$H config set auxiliary.compression.base_url "http://127.0.0.1:11434/v1"
+$H config set auxiliary.compression.model "qwen3.8:27b"
+$H config set auxiliary.compression.timeout 900
+$H config set auxiliary.compression.reasoning_effort none
+$H config set auxiliary.compression.max_output_tokens 2048
+# subagent 委派钉到 stock（自由模型只做对话，不过 agent 任务）
+$H config set delegation.provider custom
+$H config set delegation.base_url "http://127.0.0.1:11434/v1"
+$H config set delegation.model "qwen3.8:27b"
+# 本地流 stale 窗口拉长（思考期长时间无可视 token 不算卡死）
+$H config set agent.local_stream_stale_timeout 1800
+
 echo "done. verify with: hermes memory status && ~/FreedomLab/scripts/doctor.sh"
