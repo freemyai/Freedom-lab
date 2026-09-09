@@ -175,3 +175,59 @@ Agency 的 Docker 沙箱隔离待最后一条 sudo 命令。
 > 所有辅助任务（compression/approval/delegation）必须钉到
 > 「stock + reasoning 关 + 长超时」，主模型才可以自由。
 > 这正是规格 §26 架构「Freedom Router 多脑区」的第一次真实落地。
+
+---
+
+## Experiment 2026-09-09 — SGLang + MTP 推理引擎迁移
+
+### 动机
+
+Ollama 单流 ~8 t/s 且并发串行（4 subagent 每个 ~2 t/s），dogfood 体验崩溃。
+
+### 关键发现：Qwen3.8-27B = Qwen3_5 混合线性注意力架构
+
+- `Qwen3_5ForConditionalGeneration`（linear_attention × 3 + full_attention × 1 循环）
+- 官方 FP8 版（27GB，e4m3）+ 自带 MTP 头（mtp_num_hidden_layers=1, mtp.safetensors）
+- 混合架构 KV cache 极小，64K context 内存压力远低于纯注意力模型
+
+### 实施
+
+- SGLang 0.5.19（uv 托管 python3.12 解决 triton JIT 需要 Python.h 的问题；pip 装 ninja）
+- 启动：FP8 + --speculative-algorithm NEXTN + --tool-call-parser qwen3_coder +
+  --reasoning-parser qwen3 + --chat-template 仓库 jinja + mem-fraction 0.65
+- Hermes：model.max_tokens=8192（**关键：hermes 默认发 max_tokens=满 context，
+  SGLang 严格校验 input+output≤ctx 必 400；Ollama 不校验所以一直没暴露**）
+
+### 踩坑记录（全是真知识）
+
+1. triton JIT 需要 Python.h → uv 托管 python（不去麻烦 sudo 装 python3-dev）
+2. JIT 需要 ninja → pip 装进 venv + PATH
+3. **tool call 空答根因：Qwen3.8 用 XML 格式（<function=…><parameter=…>），
+   qwen25 parser 期望 JSON 格式直接丢弃 → 换 qwen3_coder parser 秒解**
+4. served_model_name 不能带冒号（冒号是 LoRA 语法）→ 旧会话里
+   freedom-qwen3.8:27b 打 SGLang 会报 LoRA adapter '27b' 400
+5. 统一内存下 mem-fraction-static 按总显存算，必须 ≤ CUDA free/total
+   （实测 CUDA free 波动 69-98GB，受 ollama 驻留模型影响）
+
+### 实测数据
+
+| 指标 | Ollama GGUF Q4 | SGLang FP8 + MTP |
+|---|---|---|
+| 单流生成 | ~8 t/s | ~10.5 t/s |
+| 4 并发聚合 | ~8 t/s（串行，每个 ~2 t/s） | **~30 t/s（每个 ~7.5 t/s）** |
+| spec accept len | — | 2.0-3.2 |
+| auto tool calling | ✓ | ✓（qwen3_coder parser） |
+| reasoning 分离 | ✓ | ✓（qwen3 parser） |
+| 启动时间 | ~30s | ~12min（权重 5min + CUDA graph 7min） |
+
+### 结论
+
+并发场景（subagent × 4）体验从崩溃变为可用，单流 +30%。
+FP8 27GB 权重决定了单流带宽上限 ~10 t/s；要更快只能更小权重
+（等官方/社区 INT4 HF 格式或自量化）。
+
+### Next Action
+
+- 观察 hermes 长会话压缩在新端点下的表现（aux compression 已指向 SGLang）
+- freedom GGUF 仍走 ollama（对话备用）；如需 freedom agent 化，后续也迁 FP8
+- §54 整机重启验收仍待 owner 执行（重启后跑 start-sglang.sh）

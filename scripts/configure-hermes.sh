@@ -5,10 +5,14 @@ export PATH="$HOME/.local/bin:$PATH"
 H=hermes
 
 # 模型：stock 为默认 controller（规格 §34：Freedom 须过 benchmark gate 才可升级）
-$H config set model.default "qwen3.8:27b"
+# 2026-09-09 起：主推理走 SGLang（:30000，MTP 推测解码，~10.5 t/s 单流 / ~30 t/s 并发）；
+# Ollama（:11434）仅保留 freedom GGUF 对话备用
+$H config set model.default "qwen3.8-27b"
 $H config set model.provider "custom"
-$H config set model.base_url "http://127.0.0.1:11434/v1"
+$H config set model.base_url "http://127.0.0.1:30000/v1"
 $H config set model.context_length 65536
+# 关键：SGLang 严格校验 input+max_tokens ≤ context，hermes 默认 max_tokens=满 ctx 必 400
+$H config set model.max_tokens 8192
 
 # 沙箱：docker，持久容器，只挂 workspace，断网
 $H config set terminal.backend "docker"
@@ -43,15 +47,15 @@ $H config set memory.provider hindsight
 # thinking 模型做压缩/委派又慢又烧 context。
 # 压缩：stock 模型 + 关思考 + 900s + 摘要上限 2048
 $H config set auxiliary.compression.provider custom
-$H config set auxiliary.compression.base_url "http://127.0.0.1:11434/v1"
-$H config set auxiliary.compression.model "qwen3.8:27b"
+$H config set auxiliary.compression.base_url "http://127.0.0.1:30000/v1"
+$H config set auxiliary.compression.model "qwen3.8-27b"
 $H config set auxiliary.compression.timeout 900
 $H config set auxiliary.compression.reasoning_effort none
 $H config set auxiliary.compression.max_output_tokens 2048
 # subagent 委派钉到 stock（自由模型只做对话，不过 agent 任务）
 $H config set delegation.provider custom
-$H config set delegation.base_url "http://127.0.0.1:11434/v1"
-$H config set delegation.model "qwen3.8:27b"
+$H config set delegation.base_url "http://127.0.0.1:30000/v1"
+$H config set delegation.model "qwen3.8-27b"
 # 本地流 stale 窗口拉长（思考期长时间无可视 token 不算卡死）
 $H config set agent.local_stream_stale_timeout 1800
 
