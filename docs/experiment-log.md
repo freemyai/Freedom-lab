@@ -275,3 +275,40 @@ FP8 27GB 权重决定了单流带宽上限 ~10 t/s；要更快只能更小权重
 - owner 的旧交互会话（20260905_230243，179 条消息，98K tokens）处于压缩死循环：
   其模型名带冒号（freedom-qwen3.8:27b）与 SGLang LoRA 语法冲突 → 每轮 400。
   **需要 owner 在那个终端里 /new 开新会话。**
+
+---
+
+## Experiment 2026-09-10 (下午) — hermes-lcm 无损上下文引擎安装
+
+### 安装
+
+- clone（gh-proxy）→ ~/.hermes/plugins/hermes-lcm → scripts/install.sh
+- config.yaml: plugins.enabled=[hermes-lcm] + context.engine=lcm
+- 版本：hermes-lcm v1.0.0-rc.1（MIT，Voltropy/社区，LCM paper Feb 2026）
+
+### 验证结果
+
+| 项 | 结果 |
+|---|---|
+| 插件发现与注册 | ✓（context engine: lcm，3 hooks，15 tools via engine schemas） |
+| lcm_status 调用 | ✓（engine=lcm，threshold 0.5，summary timeout=900s 继承我们的 aux 配置） |
+| 消息无损持久化 | ✓ lcm.db 54+ 行（含已结束会话的完整原文） |
+| 官方 smoke 压测 | ✓ 6/6 PASS（concurrent R/W、跨 session scope、lifecycle soak、多轮 canary 召回、query fuzz、redaction 边界） |
+| 压缩触发 | 未触发（需 >32 条消息或 >32K tokens，dogfood 中自然触发） |
+
+### 坑
+
+1. **插件 SQLite 硬化校验**：lcm.db 父目录必须非 group/other 可写（拒绝 775）。
+   压测脚本在 umask 002 下自建目录被拒 → umask 077 后 6/6 全过。
+   生产路径 ~/.hermes 是 700，天然合规。
+2. **Hindsight 切 SGLang 后 daemon 启动失败**：provider=openai 必须给
+   LLM API key（ollama 可空）→ config.json 加 llm_api_key=local-freedom-lab。
+3. **27B 模型偶尔用错工具调用路径**（把 lcm_status 当 deferrable tool 找），
+   直接调用路径是通的——属模型行为噪声，非配置问题。
+
+### 意义
+
+LCM 替换内置有损压缩：SQLite 原始消息 + DAG 摘要层级 + lcm_grep/lcm_recall
+有界召回。之前白帽任务的「Context length exceeded, cannot compress further」
+死亡螺旋正是 LCM 要解决的问题。阈值 0.5（32K tokens）触发后摘要走
+auxiliary.compression（SGLang + reasoning none + 900s）。
