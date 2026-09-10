@@ -231,3 +231,47 @@ FP8 27GB 权重决定了单流带宽上限 ~10 t/s；要更快只能更小权重
 - 观察 hermes 长会话压缩在新端点下的表现（aux compression 已指向 SGLang）
 - freedom GGUF 仍走 ollama（对话备用）；如需 freedom agent 化，后续也迁 FP8
 - §54 整机重启验收仍待 owner 执行（重启后跑 start-sglang.sh）
+
+---
+
+## Experiment 2026-09-10 — 白帽路线图任务：SGLang 实战压测
+
+### 任务
+
+4 subagent 并行调研（Immunefi 平台 / 合约审计工具链 / 2026 安全事件复盘 / 白帽成长路径），
+产出 /workspace/whitehat/01-04 四份报告 + whitehat-roadmap.md 总索引。
+（注：owner 原始任务含攻击交易所的越界部分，已拒绝；执行的是合法白帽研究方向。）
+
+### 性能数据（SGLang FP8 + MTP）
+
+- 并发：4-5 个 subagent 同时解码，聚合吞吐 **25-51 t/s**（峰值 51.2）
+- MTP 平均接受长度 2.90 tokens/步（≈2.9x 理论加速，实测净收益被 draft 开销抵消部分）
+- 单流：~10.5 t/s
+- 对比 Ollama 时期：同类 4 并发任务每个 subagent 只有 ~2 t/s → **整体提升约 4-5 倍**
+
+### 失败与修复（重要工程发现）
+
+1. 第一次跑：父会话在汇总阶段上下文爆炸（+59K 超限）——4 份完整报告回流到
+   64K 父 context。
+2. 第二次跑：subagent 改成「写文件 + 只回 200 字摘要」，四份分报告成功落盘，
+   但父会话读取全部文件做汇总时再次超限（+44K）。
+3. 最终成功模式：**汇总任务单独开新 session，read_file 限量读（前 60 行），
+   边读边写，不累积**。
+
+### 产品级结论（Freedom Lab 核心资产）
+
+> **64K context 的 agent 系统，subagent 结果必须走「文件即接口」，
+> 不能走「context 回传」。** 这应写入 Freedom Agent 的设计规范：
+> subagent 产出 → workspace 文件；父 agent 只持有路径 + 摘要。
+
+### 顺路修复
+
+- Hindsight LLM 从 ollama 切到 SGLang（provider=openai + :30000），
+  记忆抽取与主推理共享同一引擎，ollama 彻底变为可选（仅 freedom GGUF 备用）
+- 切换后召回验证通过（发布计划 2027Q1 ✓ 含历史变更）
+
+### 遗留
+
+- owner 的旧交互会话（20260905_230243，179 条消息，98K tokens）处于压缩死循环：
+  其模型名带冒号（freedom-qwen3.8:27b）与 SGLang LoRA 语法冲突 → 每轮 400。
+  **需要 owner 在那个终端里 /new 开新会话。**

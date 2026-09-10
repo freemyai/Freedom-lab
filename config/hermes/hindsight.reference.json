@@ -1,8 +1,8 @@
 {
   "mode": "local_embedded",
-  "llm_provider": "ollama",
-  "llm_base_url": "http://127.0.0.1:11434/v1",
-  "llm_model": "qwen3.8:27b",
+  "llm_provider": "openai",
+  "llm_base_url": "http://127.0.0.1:30000/v1",
+  "llm_model": "qwen3.8-27b",
   "bank_id": "freedom-main",
   "recall_budget": "mid",
   "memory_mode": "hybrid",
