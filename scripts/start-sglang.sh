@@ -1,22 +1,38 @@
 #!/usr/bin/env bash
-# Freedom Lab — SGLang 推理服务（Qwen3.8-27B-FP8 + MTP 推测解码）
-# 替代 Ollama，目标 2-3x 生成速度；OpenAI 兼容 API :30000
+# Freedom Lab — SGLang 推理服务（通用版）
+# 用法: start-sglang.sh [stock|freedom]   默认 freedom
 set -euo pipefail
-MODEL=~/FreedomLab/models/qwen3.8-27b-fp8
+VARIANT="${1:-freedom}"
 PY=~/FreedomLab/.venvs/sglang/bin/python
-LOG=~/FreedomLab/logs/sglang.log
 PIDF=~/.config/freedomlab/sglang.pid
 mkdir -p ~/.config/freedomlab
-# JIT 编译依赖（ninja/gcc）需要从 venv 找到
 export PATH="$HOME/FreedomLab/.venvs/sglang/bin:$PATH"
 
-if curl -sf --max-time 3 http://127.0.0.1:30000/health >/dev/null 2>&1; then
-  echo "sglang already running"; exit 0
+case "$VARIANT" in
+  stock)
+    MODEL=~/FreedomLab/models/qwen3.8-27b-fp8
+    NAME=qwen3.8-27b
+    ;;
+  freedom)
+    MODEL=~/FreedomLab/models/qwen3.8-27b-uncensored
+    NAME=freedom-qwen3.8-27b
+    ;;
+  *) echo "usage: $0 [stock|freedom]"; exit 1;;
+esac
+LOG=~/FreedomLab/logs/sglang-$VARIANT.log
+
+if curl -sf --max-time 3 http://127.0.0.1:30000/v1/models >/dev/null 2>&1; then
+  cur=$(curl -s http://127.0.0.1:30000/v1/models | grep -oE '"id":"[^"]+"' | head -1)
+  if [ "$cur" = "\"id\":\"$NAME\"" ]; then
+    echo "sglang ($VARIANT) already running"; exit 0
+  fi
+  echo "端口被其他模型占用（$cur），先停掉: kill \$(cat $PIDF)"
+  exit 1
 fi
 
 nohup "$PY" -m sglang.launch_server \
   --model-path "$MODEL" \
-  --served-model-name qwen3.8-27b \
+  --served-model-name "$NAME" \
   --host 127.0.0.1 --port 30000 \
   --context-length 65536 \
   --chat-template "$MODEL/chat_template.jinja" \
@@ -32,10 +48,10 @@ nohup "$PY" -m sglang.launch_server \
   --log-level info \
   > "$LOG" 2>&1 &
 echo $! > "$PIDF"
-echo "sglang launching (pid $(cat $PIDF))，日志: $LOG"
-echo "等待就绪（模型加载需几分钟）..."
-for i in $(seq 1 120); do
-  curl -sf --max-time 3 http://127.0.0.1:30000/health >/dev/null 2>&1 && { echo "sglang READY"; exit 0; }
+echo "sglang ($VARIANT, $NAME) launching, pid $(cat $PIDF)，日志: $LOG"
+echo "等待就绪（约 10 分钟）..."
+for i in $(seq 1 150); do
+  curl -sf --max-time 3 http://127.0.0.1:30000/v1/models >/dev/null 2>&1 && { echo "sglang READY ($NAME)"; exit 0; }
   sleep 5
 done
 echo "启动超时，看日志: tail -50 $LOG"

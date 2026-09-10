@@ -312,3 +312,35 @@ LCM 替换内置有损压缩：SQLite 原始消息 + DAG 摘要层级 + lcm_grep
 有界召回。之前白帽任务的「Context length exceeded, cannot compress further」
 死亡螺旋正是 LCM 要解决的问题。阈值 0.5（32K tokens）触发后摘要走
 auxiliary.compression（SGLang + reasoning none + 900s）。
+
+---
+
+## Experiment 2026-09-10 (晚) — Freedom 模型上 SGLang（owner 决策）
+
+### 决策
+
+Owner 明确要求主模型用 freedom（JonathanColetti Qwen3.8-27B-Uncensored），
+不用 stock。下载 BF16 HF 权重（52GB，含 MTP 头）上 SGLang。
+§34 gate 记录：owner 知情并接受 freedom 当 controller 的风险，
+T 系列 benchmark 后续补跑验证可靠性。
+
+### 实施
+
+- 下载 JonathanColetti/Qwen3.8-27B-Uncensored（HF safetensors，12 shards + mtp）
+- shard 09 首次下载截断（4.69GB/4.96GB）→ 单文件重下修复
+- start-sglang.sh 改为双模型通用版：start-sglang.sh [stock|freedom]（默认 freedom）
+- Hermes 全链路切 freedom：model.default / delegation / compression / hindsight LLM
+- 验证：对话 ✓、auto tool calling ✓（结构化）、沙箱写文件 ✓、MTP ✓（accept ~2.4-2.7）
+
+### 速度实测（诚实数据）
+
+| 配置 | 单流 | 备注 |
+|---|---|---|
+| stock FP8 (27GB) | ~10.5 t/s | FP8 带宽上限 ~10 t/s |
+| freedom BF16 (55GB) | **~5.3 t/s** | BF16 带宽上限 ~5 t/s，已达上限 |
+| freedom 并发（4 同 prompt） | 缓存去重后极快 | radix cache 生效 |
+
+**结论：freedom BF16 单流比 stock FP8 慢一半——不是配置问题，是
+BF16 权重字节数是 FP8 两倍，带宽物理上限减半。**
+提速路径：把 uncensored 权重 FP8 化（SGLang --quantize-and-serve 或
+llm-compressor 离线量化），预计可回到 ~10 t/s。列入下一步候选。
