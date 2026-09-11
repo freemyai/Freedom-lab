@@ -64,3 +64,12 @@ hermes config set model.default qwen3.8:27b           # Stock (默认 controller
 会「传染」新会话。
 **修复**：会话内 `/model` 选横杠名（freedom-qwen3.8-27b / qwen3.8-27b），
 或退出重开 `hermes`。
+
+## 故障排除：少数巨型消息撑爆上下文（LCM fresh tail 无 token 约束）
+
+**症状**：会话只有几十条消息却报 context exceeded，LCM 日志显示
+"compression no-op: raw backlog outside fresh tail is below leaf chunk threshold"。
+**根因**：LCM 默认 fresh tail 只按消息条数（32 条）保留，不限制 token 数；
+几条超长消息（贴入长文/大工具输出）就能占满整个 64K。
+**修复**：~/.hermes/.env 加 `LCM_FRESH_TAIL_MAX_TOKENS=24000`（已配置），
+重启 hermes 进程生效。
