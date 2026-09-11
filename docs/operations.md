@@ -55,3 +55,12 @@ hermes config set model.default qwen3.8:27b           # Stock (默认 controller
 - pypi.org 慢；用 UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple（28MB/s vs 0.5MB/s）
 - ollama.com 可达；registry.ollama.ai 可达且快
 - 大文件分片并行下载：scripts/parallel-download.sh
+
+## 故障排除：LoRA adapter '27b' 400
+
+**症状**：API 400 "LoRA adapter '27b' was requested"。
+**根因**：会话的模型名带冒号（旧时代的 `qwen3.8:27b`），SGLang 把冒号当
+`model:adapter` LoRA 语法。`/new` 会继承上一个会话的模型名，所以旧会话
+会「传染」新会话。
+**修复**：会话内 `/model` 选横杠名（freedom-qwen3.8-27b / qwen3.8-27b），
+或退出重开 `hermes`。
