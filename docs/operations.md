@@ -73,3 +73,15 @@ hermes config set model.default qwen3.8:27b           # Stock (默认 controller
 几条超长消息（贴入长文/大工具输出）就能占满整个 64K。
 **修复**：~/.hermes/.env 加 `LCM_FRESH_TAIL_MAX_TOKENS=24000`（已配置），
 重启 hermes 进程生效。
+
+## 故障排除：巨型旧会话压缩超时（total ceiling 600s）
+
+**症状**：resume 超大旧会话后反复 "Context compression reached its total
+ceiling after 600.0s … provider call was not sent"。
+**根因**：压缩 10 万 token 需要 aux 模型读完整个会话，BF16 慢速模型
+（~5 t/s）光 prefill 就超过 600 秒默认天花板。
+**修复**：`hermes config set compression.context_total_ceiling_seconds 7200`
+（已配置）。然后会话内 `/compress` 并**耐心等待 15-30 分钟**——
+只需要成功一次，之后 LCM 会增量维护，不会再积压。
+**注意**：会话模型名若带冒号（状态栏显示 freedom-qwen3.8:27b），
+压缩成功后主调用仍会 LoRA 400——先 `/model` 切成横杠名再 /compress。
