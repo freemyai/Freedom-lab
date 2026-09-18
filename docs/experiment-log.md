@@ -344,3 +344,15 @@ T 系列 benchmark 后续补跑验证可靠性。
 BF16 权重字节数是 FP8 两倍，带宽物理上限减半。**
 提速路径：把 uncensored 权重 FP8 化（SGLang --quantize-and-serve 或
 llm-compressor 离线量化），预计可回到 ~10 t/s。列入下一步候选。
+
+---
+
+## 2026-09-18 — 推送到 freemyai 组织
+
+- 仓库公开：https://github.com/freemyai/Freedom-lab（main，21 commits）
+- HTTPS push 直连成功（此前判断 github.com:443 被墙，实测 git push 可用）
+- freemyai/my-ai 已公开：Jan fork → My AI 产品骨架（M0 架构期，Rust Control Plane +
+  Jan/Hermes/Hindsight/LCM 适配器契约）。与 Freedom Lab 同一栈、不同交付物：
+  my-ai 定义契约，Freedom Lab 已在生产中验证这些契约（continuity contract 里的
+  context pressure / summarizer timeout / finish_reason=length / 模型切换 /
+  重启恢复 全部有实测记录）。
